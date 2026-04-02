@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Plus, Trash2, Download, Upload, MoveUp, MoveDown, FileText, Image as ImageIcon, X, Rocket, CheckSquare, Square, Check, Grid, AlignLeft, AlignCenter, AlignRight, ChevronUp, ChevronDown, GripVertical, Settings } from 'lucide-react';
+import { Plus, Trash2, Download, Upload, MoveUp, MoveDown, FileText, Image as ImageIcon, X, Rocket, CheckSquare, Square, Check, Grid, AlignLeft, AlignCenter, AlignRight, ChevronUp, ChevronDown, GripVertical, Settings, Folder } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { toPng } from 'html-to-image';
 import JSZip from 'jszip';
@@ -672,6 +672,7 @@ export default function App() {
   const [subHeaderStyle, setSubHeaderStyle] = useState<TextStyle>({ ...DEFAULT_STYLE, fontSize: 14, bold: true, color: '#124e8f' });
   const [date, setDate] = useState('JANUARY 2026');
   const [dateStyle, setDateStyle] = useState<TextStyle>({ ...DEFAULT_STYLE, fontSize: 14, bold: true, color: '#ffffff' });
+  const [brand, setBrand] = useState('FALCO');
   
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
@@ -1096,6 +1097,102 @@ export default function App() {
     }, 500);
   };
 
+  const handleSaveToLocalFolder = async () => {
+    if (!('showDirectoryPicker' in window)) {
+      alert('Your browser does not support the File System Access API. Please use Chrome or Edge.');
+      return;
+    }
+    
+    setIsExporting(true);
+    
+    try {
+      const rootHandle = await (window as any).showDirectoryPicker({
+        mode: 'readwrite'
+      });
+      
+      // Parse date
+      const [monthStr, yearStr] = date.split(' ');
+      const month = monthStr || 'JANUARY';
+      const year = yearStr || '2026';
+      
+      // Create folder structure: Brand / Year / Month
+      const brandHandle = await rootHandle.getDirectoryHandle(brand || 'UNBRANDED', { create: true });
+      const yearHandle = await brandHandle.getDirectoryHandle(year, { create: true });
+      const monthHandle = await yearHandle.getDirectoryHandle(month, { create: true });
+      
+      // Generate PDF
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      for (let i = 0; i < pages.length; i++) {
+        const pageEl = document.getElementById(`page-${i}`);
+        if (!pageEl) continue;
+        const dataUrl = await toPng(pageEl, { quality: 1.0, pixelRatio: 2, backgroundColor: '#ffffff' });
+        if (i > 0) pdf.addPage();
+        const imgProps = pdf.getImageProperties(dataUrl);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      }
+      const pdfBlob = pdf.output('blob');
+      const pdfFileHandle = await monthHandle.getFileHandle(`${brand}_${month}_${year}.pdf`, { create: true });
+      const pdfWritable = await pdfFileHandle.createWritable();
+      await pdfWritable.write(pdfBlob);
+      await pdfWritable.close();
+
+      // Save JSON data
+      const dataFileHandle = await monthHandle.getFileHandle(`${brand}_${month}_${year}.json`, { create: true });
+      const writable = await dataFileHandle.createWritable();
+      const data = {
+        header, subHeader, date, brand, items, logo, headerImage, footerText,
+        headerStyle, subHeaderStyle, dateStyle, footerStyle, viewMode, columnOrder, columnWidths
+      };
+      await writable.write(JSON.stringify(data, null, 2));
+      await writable.close();
+
+      alert(`Pricelist saved successfully to: ${brand}/${year}/${month}`);
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        // User cancelled
+      } else {
+        console.error('Error saving to local folder:', error);
+        alert('Error saving to local folder. Please make sure you have granted permission.');
+      }
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleLoadPricelist = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target?.result as string);
+        if (data.header) setHeader(data.header);
+        if (data.subHeader) setSubHeader(data.subHeader);
+        if (data.date) setDate(data.date);
+        if (data.brand) setBrand(data.brand);
+        if (data.items) setItems(data.items);
+        if (data.logo) setLogo(data.logo);
+        if (data.headerImage) setHeaderImage(data.headerImage);
+        if (data.footerText) setFooterText(data.footerText);
+        if (data.headerStyle) setHeaderStyle(data.headerStyle);
+        if (data.subHeaderStyle) setSubHeaderStyle(data.subHeaderStyle);
+        if (data.dateStyle) setDateStyle(data.dateStyle);
+        if (data.footerStyle) setFooterStyle(data.footerStyle);
+        if (data.viewMode) setViewMode(data.viewMode);
+        if (data.columnOrder) setColumnOrder(data.columnOrder);
+        if (data.columnWidths) setColumnWidths(data.columnWidths);
+        alert('Pricelist loaded successfully!');
+      } catch (error) {
+        console.error('Error loading pricelist:', error);
+        alert('Error loading pricelist. Please make sure it is a valid JSON file.');
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const getActiveStyleContext = () => {
     if (!activeStyleField) return null;
     
@@ -1259,6 +1356,20 @@ export default function App() {
             >
               <Download size={14} /> JPG
             </button>
+            <button
+              onClick={handleSaveToLocalFolder}
+              className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-md transition-all flex items-center gap-1.5 font-bold shadow-sm active:scale-95"
+              title="Save to local folder (Brand/Year/Month)"
+            >
+              <Folder size={14} /> Save to Folder
+            </button>
+            <label
+              className="text-xs bg-neutral-100 hover:bg-neutral-200 text-neutral-700 px-4 py-1.5 rounded-md transition-all flex items-center gap-1.5 font-bold shadow-sm active:scale-95 cursor-pointer"
+              title="Load pricelist from JSON file"
+            >
+              <Upload size={14} /> Load
+              <input type="file" className="hidden" onChange={handleLoadPricelist} accept=".json" />
+            </label>
           </div>
         </div>
 
@@ -1537,6 +1648,18 @@ export default function App() {
                         placeholder="SUBHEADER"
                       />
                     </div>
+                    {!isExporting && (
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">Brand:</span>
+                        <input
+                          type="text"
+                          value={brand}
+                          onChange={(e) => setBrand(e.target.value)}
+                          className="text-[10px] font-bold text-[#124e8f] bg-white border border-neutral-200 rounded px-1.5 py-0.5 focus:outline-none focus:border-[#124e8f]/50"
+                          placeholder="BRAND NAME"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
                 
