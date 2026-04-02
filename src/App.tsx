@@ -557,6 +557,12 @@ const LaunchGuide = ({ onClose }: { onClose: () => void }) => {
               description="Vercel gives you a public URL. Your pricelist builder is now ready for your team!"
               icon={<ImageIcon className="text-green-500" size={20} />}
             />
+            <Step 
+              number="05" 
+              title="Get Android APK" 
+              description="Go to pwabuilder.com, paste your Vercel URL, and download your Android APK!"
+              icon={<Download className="text-blue-500" size={20} />}
+            />
           </div>
 
           <div className="bg-neutral-50 rounded-2xl p-6 flex flex-col items-center justify-center border border-neutral-100">
@@ -570,11 +576,11 @@ const LaunchGuide = ({ onClose }: { onClose: () => void }) => {
                 </li>
                 <li className="flex items-start gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-[#f6c344] mt-1 shrink-0"></div>
-                  <span><strong>Custom Domains:</strong> You can connect your own domain (e.g., pricelist.yourcompany.com) in Vercel settings.</span>
+                  <span><strong>PWA Ready:</strong> Your app is a Progressive Web App. Users can install it directly from the browser!</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-[#f6c344] mt-1 shrink-0"></div>
-                  <span><strong>SSL Included:</strong> Vercel provides free SSL certificates for all your deployments.</span>
+                  <span><strong>Custom Domains:</strong> You can connect your own domain (e.g., pricelist.yourcompany.com) in Vercel settings.</span>
                 </li>
               </ul>
             </div>
@@ -667,6 +673,29 @@ export default function App() {
   const [date, setDate] = useState('JANUARY 2026');
   const [dateStyle, setDateStyle] = useState<TextStyle>({ ...DEFAULT_STYLE, fontSize: 14, bold: true, color: '#ffffff' });
   
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+      setIsInstallable(false);
+    }
+  };
+
   const [activeStyleField, setActiveStyleField] = useState<{ id: string, field: string } | null>(null);
   const [logo, setLogo] = useState<string | null>(null);
   const [items, setItems] = useState<PricelistItem[]>([
@@ -1118,9 +1147,18 @@ export default function App() {
               <h1 className="text-base font-black tracking-tight text-[#124e8f] leading-none">PriceList</h1>
               <span className="text-[10px] font-bold text-[#f6c344] uppercase tracking-widest mt-0.5">Editor</span>
             </div>
+            {isInstallable && (
+              <button 
+                onClick={handleInstallClick}
+                className="text-[10px] font-bold uppercase tracking-wider bg-green-500/10 hover:bg-green-500/20 text-green-600 px-2.5 py-1.5 rounded-md flex items-center gap-1.5 transition-colors ml-4 border border-green-500/20"
+                title="Install App to your device"
+              >
+                <Download size={12} /> Install App
+              </button>
+            )}
             <button 
               onClick={() => setShowLaunchGuide(true)}
-              className="text-[10px] font-bold uppercase tracking-wider bg-[#124e8f]/10 hover:bg-[#124e8f]/20 text-[#124e8f] px-2.5 py-1.5 rounded-md flex items-center gap-1.5 transition-colors ml-4 border border-[#124e8f]/20"
+              className="text-[10px] font-bold uppercase tracking-wider bg-[#124e8f]/10 hover:bg-[#124e8f]/20 text-[#124e8f] px-2.5 py-1.5 rounded-md flex items-center gap-1.5 transition-colors ml-2 border border-[#124e8f]/20"
               title="How to launch on Vercel"
             >
               <Rocket size={12} /> Launch Guide
