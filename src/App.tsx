@@ -5,6 +5,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Plus, Trash2, Download, Upload, MoveUp, MoveDown, FileText, Image as ImageIcon, X, Rocket, CheckSquare, Square, Check, Grid, AlignLeft, AlignCenter, AlignRight, ChevronUp, ChevronDown, GripVertical, Settings, Folder } from 'lucide-react';
+import { get, set } from 'idb-keyval';
 import jsPDF from 'jspdf';
 import { toPng } from 'html-to-image';
 import JSZip from 'jszip';
@@ -673,6 +674,7 @@ export default function App() {
   const [date, setDate] = useState('JANUARY 2026');
   const [dateStyle, setDateStyle] = useState<TextStyle>({ ...DEFAULT_STYLE, fontSize: 14, bold: true, color: '#ffffff' });
   const [brand, setBrand] = useState('FALCO');
+  const [rootHandle, setRootHandle] = useState<FileSystemDirectoryHandle | null>(null);
   
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
@@ -684,8 +686,39 @@ export default function App() {
       setIsInstallable(true);
     };
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    const loadHandle = async () => {
+      try {
+        const savedHandle = await get('pricelist-root-folder');
+        if (savedHandle) {
+          setRootHandle(savedHandle);
+        }
+      } catch (err) {
+        console.error('Failed to load saved folder handle:', err);
+      }
+    };
+    loadHandle();
+
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
   }, []);
+
+  async function verifyPermission(handle: FileSystemHandle, readWrite: boolean) {
+    const options: any = {};
+    if (readWrite) {
+      options.mode = 'readwrite';
+    }
+    try {
+      if ((await (handle as any).queryPermission(options)) === 'granted') {
+        return true;
+      }
+      if ((await (handle as any).requestPermission(options)) === 'granted') {
+        return true;
+      }
+    } catch (err) {
+      console.error('Error verifying permission:', err);
+    }
+    return false;
+  }
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
@@ -1097,7 +1130,7 @@ export default function App() {
     }, 500);
   };
 
-  const handleSaveToLocalFolder = async () => {
+  const handleSaveToLocalFolder = async (forceNewFolder = false) => {
     if (!('showDirectoryPicker' in window)) {
       alert('Your browser does not support the File System Access API. Please use Chrome or Edge.');
       return;
@@ -1106,9 +1139,29 @@ export default function App() {
     setIsExporting(true);
     
     try {
-      const rootHandle = await (window as any).showDirectoryPicker({
-        mode: 'readwrite'
-      });
+      let currentHandle = rootHandle;
+      
+      if (forceNewFolder || !currentHandle) {
+        currentHandle = await (window as any).showDirectoryPicker({
+          mode: 'readwrite'
+        });
+        setRootHandle(currentHandle);
+        await set('pricelist-root-folder', currentHandle);
+      } else {
+        const hasPermission = await verifyPermission(currentHandle, true);
+        if (!hasPermission) {
+          currentHandle = await (window as any).showDirectoryPicker({
+            mode: 'readwrite'
+          });
+          setRootHandle(currentHandle);
+          await set('pricelist-root-folder', currentHandle);
+        }
+      }
+
+      if (!currentHandle) {
+        setIsExporting(false);
+        return;
+      }
       
       // Parse date
       const [monthStr, yearStr] = date.split(' ');
@@ -1116,7 +1169,7 @@ export default function App() {
       const year = yearStr || '2026';
       
       // Create folder structure: Brand / Year / Month
-      const brandHandle = await rootHandle.getDirectoryHandle(brand || 'UNBRANDED', { create: true });
+      const brandHandle = await currentHandle.getDirectoryHandle(brand || 'UNBRANDED', { create: true });
       const yearHandle = await brandHandle.getDirectoryHandle(year, { create: true });
       const monthHandle = await yearHandle.getDirectoryHandle(month, { create: true });
       
@@ -1148,7 +1201,7 @@ export default function App() {
       await writable.write(JSON.stringify(data, null, 2));
       await writable.close();
 
-      alert(`Pricelist saved successfully to: ${brand}/${year}/${month}`);
+      alert(`Pricelist saved successfully to: ${currentHandle.name}/${brand}/${year}/${month}`);
     } catch (error: any) {
       if (error.name === 'AbortError') {
         // User cancelled
@@ -1356,13 +1409,24 @@ export default function App() {
             >
               <Download size={14} /> JPG
             </button>
-            <button
-              onClick={handleSaveToLocalFolder}
-              className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-md transition-all flex items-center gap-1.5 font-bold shadow-sm active:scale-95"
-              title="Save to local folder (Brand/Year/Month)"
-            >
-              <Folder size={14} /> Save to Folder
-            </button>
+            <div className="flex items-center">
+              <button
+                onClick={() => handleSaveToLocalFolder(false)}
+                className={`text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 ${rootHandle ? 'rounded-l-md border-r border-emerald-500/30' : 'rounded-md'} transition-all flex items-center gap-1.5 font-bold shadow-sm active:scale-95`}
+                title={rootHandle ? `Save to ${rootHandle.name}` : "Save to local folder (Brand/Year/Month)"}
+              >
+                <Folder size={14} /> {rootHandle ? rootHandle.name : 'Save to Folder'}
+              </button>
+              {rootHandle && (
+                <button
+                  onClick={() => handleSaveToLocalFolder(true)}
+                  className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1.5 rounded-r-md transition-all flex items-center justify-center font-bold shadow-sm active:scale-95"
+                  title="Change Folder"
+                >
+                  <Settings size={12} />
+                </button>
+              )}
+            </div>
             <label
               className="text-xs bg-neutral-100 hover:bg-neutral-200 text-neutral-700 px-4 py-1.5 rounded-md transition-all flex items-center gap-1.5 font-bold shadow-sm active:scale-95 cursor-pointer"
               title="Load pricelist from JSON file"
