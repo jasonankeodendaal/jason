@@ -1046,15 +1046,15 @@ export default function App() {
     const footerHeight = 60;
     const tableHeaderHeight = 34;
     
-    // Available for rows on other pages = 1074 - 34 - 60 - 1 (border-b) = 979
-    // Reduced by 10px to ensure no clipping on various rendering engines
-    const OTHER_PAGE_MAX = 1074 - tableHeaderHeight - footerHeight - 11;
+    // Available for rows on other pages = 1074 - 60 - 11 = 1003 (No header on pages > 1)
+    const OTHER_PAGE_MAX = 1074 - footerHeight - 11;
     
     // First page header:
     // Logo section = 140px + 32px (mb-8) = 172px
     // Custom Header Image = 96px (h-24) + 16px (mb-4) = 112px
+    // Table Header = 34px
     const headerImageHeight = headerImage ? 112 : 0;
-    const FIRST_PAGE_MAX = OTHER_PAGE_MAX - 172 - headerImageHeight;
+    const FIRST_PAGE_MAX = 1074 - tableHeaderHeight - footerHeight - 172 - headerImageHeight - 11;
 
     items.forEach((item, index) => {
       const itemWithIndex = { ...item, originalIndex: index };
@@ -1753,109 +1753,111 @@ export default function App() {
             )}
 
           {/* Table Header */}
-          <div 
-            className={`${isExporting ? 'grid' : 'hidden sm:grid'} bg-[#124e8f] text-[#ffffff] text-[11px] font-bold uppercase tracking-wider border-x border-t border-[#124e8f] h-[34px] ${isExporting ? 'relative' : 'sticky top-[65px]'} z-20 shadow-sm print:shadow-none print:relative print:top-auto`}
-            style={{ gridTemplateColumns: getGridTemplate(true, isExporting) }}
-            onClick={(e) => { e.stopPropagation(); setSelectedColumn(null); }}
-          >
-            {!isExporting && (
-              <>
-                <div className="py-2 px-1 border-r border-[#ffffff]/20 flex items-center justify-center">
-                  <Settings size={14} className="opacity-40" />
-                </div>
-                <div className="py-2 px-1 border-r border-[#ffffff]/20 flex items-center justify-center relative group">
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); toggleSelectAll(); }}
-                    className="text-[#ffffff]/60 hover:text-[#ffffff] transition-colors"
-                    title="Select All"
+          {pageIndex === 0 && (
+            <div 
+              className={`${isExporting ? 'grid' : 'hidden sm:grid'} bg-[#124e8f] text-[#ffffff] text-[11px] font-bold uppercase tracking-wider border-x border-t border-[#124e8f] h-[34px] ${isExporting ? 'relative' : 'sticky top-[65px]'} z-20 shadow-sm print:shadow-none print:relative print:top-auto`}
+              style={{ gridTemplateColumns: getGridTemplate(true, isExporting) }}
+              onClick={(e) => { e.stopPropagation(); setSelectedColumn(null); }}
+            >
+              {!isExporting && (
+                <>
+                  <div className="py-2 px-1 border-r border-[#ffffff]/20 flex items-center justify-center">
+                    <Settings size={14} className="opacity-40" />
+                  </div>
+                  <div className="py-2 px-1 border-r border-[#ffffff]/20 flex items-center justify-center relative group">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); toggleSelectAll(); }}
+                      className="text-[#ffffff]/60 hover:text-[#ffffff] transition-colors"
+                      title="Select All"
+                    >
+                      {selectedIds.size === items.filter(i => !i.isCategory).length && selectedIds.size > 0 ? <CheckSquare size={14} /> : <Square size={14} />}
+                    </button>
+                    <ColumnResizer 
+                      onResize={(d) => handleColumnResize('select', d)} 
+                      width={columnWidths['select']}
+                      onWidthChange={(w) => setColumnWidths(prev => ({ ...prev, select: w }))}
+                    />
+                  </div>
+                </>
+              )}
+              {columnOrder.map(col => {
+                if (col === 'img' && viewMode === 'with-images') return (
+                  <div 
+                    key="img"
+                    className={`py-2 px-1 border-r border-[#ffffff]/20 text-center relative group cursor-pointer transition-colors ${selectedColumn === 'img' ? 'bg-white/20' : 'hover:bg-white/10'}`}
+                    onClick={(e) => { e.stopPropagation(); setSelectedColumn('img'); setSelectedIds(new Set()); }}
                   >
-                    {selectedIds.size === items.filter(i => !i.isCategory).length && selectedIds.size > 0 ? <CheckSquare size={14} /> : <Square size={14} />}
-                  </button>
-                  <ColumnResizer 
-                    onResize={(d) => handleColumnResize('select', d)} 
-                    width={columnWidths['select']}
-                    onWidthChange={(w) => setColumnWidths(prev => ({ ...prev, select: w }))}
-                  />
-                </div>
-              </>
-            )}
-            {columnOrder.map(col => {
-              if (col === 'img' && viewMode === 'with-images') return (
-                <div 
-                  key="img"
-                  className={`py-2 px-1 border-r border-[#ffffff]/20 text-center relative group cursor-pointer transition-colors ${selectedColumn === 'img' ? 'bg-white/20' : 'hover:bg-white/10'}`}
-                  onClick={(e) => { e.stopPropagation(); setSelectedColumn('img'); setSelectedIds(new Set()); }}
-                >
-                  IMG
-                  <ColumnResizer 
-                    onResize={(d) => handleColumnResize('img', d)} 
-                    width={columnWidths['img']}
-                    onWidthChange={(w) => setColumnWidths(prev => ({ ...prev, img: w }))}
-                  />
-                </div>
-              );
-              if (col === 'sku') return (
-                <div 
-                  key="sku"
-                  className={`py-2 px-4 border-r border-[#ffffff]/20 relative group cursor-pointer transition-colors ${selectedColumn === 'sku' ? 'bg-white/20' : 'hover:bg-white/10'}`}
-                  onClick={(e) => { e.stopPropagation(); setSelectedColumn('sku'); setSelectedIds(new Set()); }}
-                >
-                  SKU
-                  <ColumnResizer 
-                    onResize={(d) => handleColumnResize('sku', d)} 
-                    width={columnWidths['sku']}
-                    onWidthChange={(w) => setColumnWidths(prev => ({ ...prev, sku: w }))}
-                  />
-                </div>
-              );
-              if (col === 'description') return (
-                <div 
-                  key="description"
-                  className={`py-2 px-4 border-r border-[#ffffff]/20 relative group cursor-pointer transition-colors ${selectedColumn === 'description' ? 'bg-white/20' : 'hover:bg-white/10'}`}
-                  onClick={(e) => { e.stopPropagation(); setSelectedColumn('description'); setSelectedIds(new Set()); }}
-                >
-                  DESCRIPTION
-                  <ColumnResizer 
-                    onResize={(d) => handleColumnResize('description', d)} 
-                    width={columnWidths['description']}
-                    onWidthChange={(w) => setColumnWidths(prev => ({ ...prev, description: w }))}
-                  />
-                </div>
-              );
-              if (col === 'normal') return (
-                <div 
-                  key="normal"
-                  className={`py-2 px-4 ${viewMode !== 'without-image-promo' ? 'border-r border-[#ffffff]/20' : ''} text-right relative group cursor-pointer transition-colors ${selectedColumn === 'normal' ? 'bg-white/20' : 'hover:bg-white/10'}`}
-                  onClick={(e) => { e.stopPropagation(); setSelectedColumn('normal'); setSelectedIds(new Set()); }}
-                >
-                  NORMAL
-                  <ColumnResizer 
-                    onResize={(d) => handleColumnResize('normal', d)} 
-                    width={columnWidths['normal']}
-                    onWidthChange={(w) => setColumnWidths(prev => ({ ...prev, normal: w }))}
-                  />
-                </div>
-              );
-              if (col === 'promo' && viewMode !== 'without-image-promo') return (
-                <div 
-                  key="promo"
-                  className={`py-2 px-4 text-right relative group cursor-pointer transition-colors ${selectedColumn === 'promo' ? 'bg-white/20' : 'hover:bg-white/10'}`}
-                  onClick={(e) => { e.stopPropagation(); setSelectedColumn('promo'); setSelectedIds(new Set()); }}
-                >
-                  PROMO
-                  <ColumnResizer 
-                    onResize={(d) => handleColumnResize('promo', d)} 
-                    width={columnWidths['promo']}
-                    onWidthChange={(w) => setColumnWidths(prev => ({ ...prev, promo: w }))}
-                  />
-                </div>
-              );
-              return null;
-            })}
-          </div>
+                    IMG
+                    <ColumnResizer 
+                      onResize={(d) => handleColumnResize('img', d)} 
+                      width={columnWidths['img']}
+                      onWidthChange={(w) => setColumnWidths(prev => ({ ...prev, img: w }))}
+                    />
+                  </div>
+                );
+                if (col === 'sku') return (
+                  <div 
+                    key="sku"
+                    className={`py-2 px-4 border-r border-[#ffffff]/20 relative group cursor-pointer transition-colors ${selectedColumn === 'sku' ? 'bg-white/20' : 'hover:bg-white/10'}`}
+                    onClick={(e) => { e.stopPropagation(); setSelectedColumn('sku'); setSelectedIds(new Set()); }}
+                  >
+                    SKU
+                    <ColumnResizer 
+                      onResize={(d) => handleColumnResize('sku', d)} 
+                      width={columnWidths['sku']}
+                      onWidthChange={(w) => setColumnWidths(prev => ({ ...prev, sku: w }))}
+                    />
+                  </div>
+                );
+                if (col === 'description') return (
+                  <div 
+                    key="description"
+                    className={`py-2 px-4 border-r border-[#ffffff]/20 relative group cursor-pointer transition-colors ${selectedColumn === 'description' ? 'bg-white/20' : 'hover:bg-white/10'}`}
+                    onClick={(e) => { e.stopPropagation(); setSelectedColumn('description'); setSelectedIds(new Set()); }}
+                  >
+                    DESCRIPTION
+                    <ColumnResizer 
+                      onResize={(d) => handleColumnResize('description', d)} 
+                      width={columnWidths['description']}
+                      onWidthChange={(w) => setColumnWidths(prev => ({ ...prev, description: w }))}
+                    />
+                  </div>
+                );
+                if (col === 'normal') return (
+                  <div 
+                    key="normal"
+                    className={`py-2 px-4 ${viewMode !== 'without-image-promo' ? 'border-r border-[#ffffff]/20' : ''} text-right relative group cursor-pointer transition-colors ${selectedColumn === 'normal' ? 'bg-white/20' : 'hover:bg-white/10'}`}
+                    onClick={(e) => { e.stopPropagation(); setSelectedColumn('normal'); setSelectedIds(new Set()); }}
+                  >
+                    NORMAL
+                    <ColumnResizer 
+                      onResize={(d) => handleColumnResize('normal', d)} 
+                      width={columnWidths['normal']}
+                      onWidthChange={(w) => setColumnWidths(prev => ({ ...prev, normal: w }))}
+                    />
+                  </div>
+                );
+                if (col === 'promo' && viewMode !== 'without-image-promo') return (
+                  <div 
+                    key="promo"
+                    className={`py-2 px-4 text-right relative group cursor-pointer transition-colors ${selectedColumn === 'promo' ? 'bg-white/20' : 'hover:bg-white/10'}`}
+                    onClick={(e) => { e.stopPropagation(); setSelectedColumn('promo'); setSelectedIds(new Set()); }}
+                  >
+                    PROMO
+                    <ColumnResizer 
+                      onResize={(d) => handleColumnResize('promo', d)} 
+                      width={columnWidths['promo']}
+                      onWidthChange={(w) => setColumnWidths(prev => ({ ...prev, promo: w }))}
+                    />
+                  </div>
+                );
+                return null;
+              })}
+            </div>
+          )}
 
           {/* Table Body */}
-          <div className={`flex-1 border-x border-b border-[#e2e8f0] flex flex-col min-h-0 ${isExporting ? 'overflow-visible' : 'overflow-hidden'}`}>
+          <div className={`flex-1 border-x border-b ${pageIndex > 0 ? 'border-t' : ''} border-[#e2e8f0] flex flex-col min-h-0 ${isExporting ? 'overflow-visible' : 'overflow-hidden'}`}>
             {pageItems.map((item) => {
               const index = item.originalIndex;
               return (
