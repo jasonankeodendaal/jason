@@ -1307,165 +1307,167 @@ export default function App() {
       onClick={() => { setActiveStyleField(null); setSelectedIds(new Set()); setSelectedColumn(null); }}
     >
       {/* Top Bar */}
-      <div className="sticky top-0 w-full bg-white/90 backdrop-blur-md border-b border-neutral-200 z-40 shadow-sm print:hidden">
-        <div className="px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img 
-              src="https://i.ibb.co/LDj74m2t/maskable-icon-1.png" 
-              alt="App Logo" 
-              className="w-10 h-10 rounded-xl shadow-sm border border-neutral-200 object-cover"
-              referrerPolicy="no-referrer"
-            />
-            <div className="hidden sm:flex flex-col justify-center">
-              <h1 className="text-base font-black tracking-tight text-[#124e8f] leading-none">PriceList</h1>
-              <span className="text-[10px] font-bold text-[#f6c344] uppercase tracking-widest mt-0.5">Editor</span>
+      <div className="sticky top-0 w-full bg-white/95 backdrop-blur-md border-b border-neutral-200 z-40 shadow-sm print:hidden">
+        <div className="px-6 py-2.5 flex items-center justify-between gap-4">
+          {/* Left Section: Logo & App Info */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="relative group">
+              <img 
+                src="https://i.ibb.co/LDj74m2t/maskable-icon-1.png" 
+                alt="App Logo" 
+                className="w-9 h-9 rounded-lg shadow-sm border border-neutral-200 object-cover transition-transform group-hover:scale-105"
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></div>
             </div>
-            {isInstallable && (
-              <button 
-                onClick={handleInstallClick}
-                className="text-[10px] font-bold uppercase tracking-wider bg-green-500/10 hover:bg-green-500/20 text-green-600 px-2.5 py-1.5 rounded-md flex items-center gap-1.5 transition-colors ml-4 border border-green-500/20"
-                title="Install App to your device"
-              >
-                <Download size={12} /> Install App
-              </button>
-            )}
-            <button 
-              onClick={() => setShowLaunchGuide(true)}
-              className="text-[10px] font-bold uppercase tracking-wider bg-[#124e8f]/10 hover:bg-[#124e8f]/20 text-[#124e8f] px-2.5 py-1.5 rounded-md flex items-center gap-1.5 transition-colors ml-2 border border-[#124e8f]/20"
-              title="How to launch on Vercel"
+            <div className="hidden sm:flex flex-col justify-center">
+              <h1 className="text-sm font-black tracking-tight text-[#124e8f] leading-none uppercase">PriceList</h1>
+              <span className="text-[9px] font-bold text-[#f6c344] uppercase tracking-widest mt-0.5">Professional Editor</span>
+            </div>
+          </div>
+
+          {/* Center Section: View Mode Tabs (Segmented Control) */}
+          <div className="hidden lg:flex items-center bg-neutral-100/80 p-1 rounded-xl border border-neutral-200/60 shadow-inner">
+            <button
+              onClick={() => setViewMode('with-images')}
+              className={`px-4 py-1.5 text-[11px] font-bold rounded-lg transition-all duration-200 flex items-center gap-2 ${viewMode === 'with-images' ? 'bg-white text-[#124e8f] shadow-md scale-[1.02]' : 'text-neutral-500 hover:text-neutral-700 hover:bg-white/50'}`}
+              title="Include Images: Show product photos in the PDF"
             >
-              <Rocket size={12} /> Launch Guide
+              <ImageIcon size={14} className={viewMode === 'with-images' ? 'text-[#124e8f]' : 'text-neutral-400'} />
+              <span className="hidden xl:inline">With Images</span>
+              <span className="xl:hidden">Images</span>
             </button>
-            <button 
-              onClick={() => setShowGridLines(!showGridLines)}
-              className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-md flex items-center gap-1.5 transition-colors ml-2 border ${showGridLines ? 'bg-[#124e8f] text-white border-[#124e8f]' : 'bg-[#124e8f]/10 hover:bg-[#124e8f]/20 text-[#124e8f] border-[#124e8f]/20'}`}
-              title="Toggle alignment grid lines"
+            <button
+              onClick={() => setViewMode('without-images')}
+              className={`px-4 py-1.5 text-[11px] font-bold rounded-lg transition-all duration-200 flex items-center gap-2 ${viewMode === 'without-images' ? 'bg-white text-[#124e8f] shadow-md scale-[1.02]' : 'text-neutral-500 hover:text-neutral-700 hover:bg-white/50'}`}
+              title="Without Images: Compact layout without photos"
             >
-              <Grid size={12} /> {showGridLines ? 'Hide Grid' : 'Show Grid'}
+              <FileText size={14} className={viewMode === 'without-images' ? 'text-[#124e8f]' : 'text-neutral-400'} />
+              <span className="hidden xl:inline">Without Images</span>
+              <span className="xl:hidden">No Images</span>
+            </button>
+            <button
+              onClick={() => setViewMode('without-image-promo')}
+              className={`px-4 py-1.5 text-[11px] font-bold rounded-lg transition-all duration-200 flex items-center gap-2 ${viewMode === 'without-image-promo' ? 'bg-white text-[#124e8f] shadow-md scale-[1.02]' : 'text-neutral-500 hover:text-neutral-700 hover:bg-white/50'}`}
+              title="Minimal: No images or promo columns"
+            >
+              <Grid size={14} className={viewMode === 'without-image-promo' ? 'text-[#124e8f]' : 'text-neutral-400'} />
+              <span>Minimal</span>
             </button>
           </div>
-          
-          <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center bg-[#124e8f]/5 p-1 rounded-md border border-[#124e8f]/10 mr-2">
-              <button
-                onClick={() => setViewMode('with-images')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded transition-all ${viewMode === 'with-images' ? 'bg-[#124e8f] text-white shadow-sm' : 'text-[#124e8f]/70 hover:text-[#124e8f]'}`}
-                title="Include Images: Show product photos in the PDF"
-              >
-                With Images
-              </button>
-              <button
-                onClick={() => setViewMode('without-images')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded transition-all ${viewMode === 'without-images' ? 'bg-[#124e8f] text-white shadow-sm' : 'text-[#124e8f]/70 hover:text-[#124e8f]'}`}
-                title="Without Images: Compact layout without photos"
-              >
-                Without Images
-              </button>
-              <button
-                onClick={() => setViewMode('without-image-promo')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded transition-all ${viewMode === 'without-image-promo' ? 'bg-[#124e8f] text-white shadow-sm' : 'text-[#124e8f]/70 hover:text-[#124e8f]'}`}
-                title="Without Image & Promo: Minimal layout"
-              >
-                Without Image & Promo
-              </button>
-            </div>
 
-            {/* Selection Actions */}
+          {/* Right Section: Action Groups */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5">
+            {/* Selection Actions (Contextual) */}
             {(selectedIds.size > 0 || selectedColumn) && (
-              <div className="flex items-center gap-1 bg-[#124e8f]/5 px-2 py-1 rounded-lg border border-[#124e8f]/20 mr-2 animate-in fade-in zoom-in duration-200">
-                <div className="text-[9px] font-black text-[#124e8f] uppercase tracking-widest px-2 border-r border-[#124e8f]/20 mr-1">
-                  {selectedColumn ? `COL: ${selectedColumn}` : `${selectedIds.size} SELECTED`}
+              <div className="flex items-center gap-0.5 bg-blue-50 px-1.5 py-1 rounded-lg border border-blue-200 shadow-sm animate-in fade-in zoom-in duration-300">
+                <div className="text-[8px] font-black text-[#124e8f] uppercase tracking-tighter px-1.5 border-r border-blue-200 mr-1">
+                  {selectedColumn ? `COL` : `${selectedIds.size} SEL`}
                 </div>
-                <button 
-                  onClick={handleMoveUp}
-                  className="p-1.5 hover:bg-white rounded text-[#124e8f] transition-colors"
-                  title="Move Up"
-                >
-                  <ChevronUp size={16} />
-                </button>
-                <button 
-                  onClick={handleMoveDown}
-                  className="p-1.5 hover:bg-white rounded text-[#124e8f] transition-colors"
-                  title="Move Down"
-                >
-                  <ChevronDown size={16} />
-                </button>
-                <button 
-                  onClick={handleDeleteSelection}
-                  className="p-1.5 hover:bg-white rounded text-red-600 transition-colors"
-                  title="Delete Selection"
-                >
-                  <Trash2 size={16} />
-                </button>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); setSelectedIds(new Set()); setSelectedColumn(null); }}
-                  className="p-1.5 hover:bg-white rounded text-neutral-400 transition-colors ml-1"
-                  title="Clear Selection"
-                >
-                  <X size={16} />
-                </button>
+                <button onClick={handleMoveUp} className="p-1.5 hover:bg-white rounded-md text-[#124e8f] transition-all active:scale-90" title="Move Up"><ChevronUp size={14} /></button>
+                <button onClick={handleMoveDown} className="p-1.5 hover:bg-white rounded-md text-[#124e8f] transition-all active:scale-90" title="Move Down"><ChevronDown size={14} /></button>
+                <button onClick={handleDeleteSelection} className="p-1.5 hover:bg-white rounded-md text-red-600 transition-all active:scale-90" title="Delete Selection"><Trash2 size={14} /></button>
+                <button onClick={(e) => { e.stopPropagation(); setSelectedIds(new Set()); setSelectedColumn(null); }} className="p-1.5 hover:bg-white rounded-md text-neutral-400 transition-all active:scale-90 ml-0.5" title="Clear Selection"><X size={14} /></button>
               </div>
             )}
 
-            <button
-              onClick={() => addItem(true)}
-              className="text-xs bg-[#124e8f]/5 hover:bg-[#124e8f]/10 text-[#124e8f] px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 font-semibold"
-            >
-              <Plus size={14} /> Category
-            </button>
-            <button
-              onClick={() => addItem(false)}
-              className="text-xs bg-[#124e8f]/5 hover:bg-[#124e8f]/10 text-[#124e8f] px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 font-semibold"
-            >
-              <Plus size={14} /> Item
-            </button>
-            <div className="w-px h-4 bg-neutral-200 mx-1"></div>
-            <button
-              onClick={() => exportDocument('pdf')}
-              className="text-xs bg-[#124e8f] hover:bg-[#0d3a6b] text-white px-4 py-1.5 rounded-md transition-all flex items-center gap-1.5 font-bold shadow-sm active:scale-95"
-            >
-              <Download size={14} /> PDF
-            </button>
-            <button
-              onClick={() => exportDocument('jpg')}
-              className="text-xs bg-[#f6c344] hover:bg-[#e5b233] text-[#124e8f] px-4 py-1.5 rounded-md transition-all flex items-center gap-1.5 font-bold shadow-sm active:scale-95"
-            >
-              <Download size={14} /> JPG
-            </button>
-            <div className="flex items-center">
+            {/* Add Group */}
+            <div className="flex items-center bg-white rounded-lg border border-neutral-200 shadow-sm overflow-hidden">
               <button
-                onClick={() => handleSaveToLocalFolder(false)}
-                className={`text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 ${rootHandle ? 'rounded-l-md border-r border-emerald-500/30' : 'rounded-md'} transition-all flex items-center gap-1.5 font-bold shadow-sm active:scale-95`}
-                title={rootHandle ? `Save to ${rootHandle.name}` : "Save to local folder (Brand/Year/Month)"}
+                onClick={() => addItem(true)}
+                className="px-3 py-1.5 text-[11px] font-bold text-[#124e8f] hover:bg-neutral-50 transition-colors flex items-center gap-1.5"
               >
-                <Folder size={14} /> {rootHandle ? rootHandle.name : 'Save to Folder'}
+                <Plus size={14} className="text-[#f6c344]" /> Category
               </button>
-              {rootHandle && (
+              <div className="w-px h-4 bg-neutral-200"></div>
+              <button
+                onClick={() => addItem(false)}
+                className="px-3 py-1.5 text-[11px] font-bold text-[#124e8f] hover:bg-neutral-50 transition-colors flex items-center gap-1.5"
+              >
+                <Plus size={14} className="text-[#f6c344]" /> Item
+              </button>
+            </div>
+
+            {/* Export Group */}
+            <div className="flex items-center bg-white rounded-lg border border-neutral-200 shadow-sm overflow-hidden">
+              <button
+                onClick={() => exportDocument('pdf')}
+                className="px-3 py-1.5 text-[11px] font-bold text-[#124e8f] hover:bg-neutral-50 transition-colors flex items-center gap-1.5"
+              >
+                <Download size={14} className="text-blue-500" /> PDF
+              </button>
+              <div className="w-px h-4 bg-neutral-200"></div>
+              <button
+                onClick={() => exportDocument('jpg')}
+                className="px-3 py-1.5 text-[11px] font-bold text-[#124e8f] hover:bg-neutral-50 transition-colors flex items-center gap-1.5"
+              >
+                <ImageIcon size={14} className="text-orange-400" /> JPG
+              </button>
+            </div>
+
+            {/* File Group */}
+            <div className="flex items-center bg-white rounded-lg border border-neutral-200 shadow-sm overflow-hidden">
+              <div className="flex items-center">
                 <button
-                  onClick={() => handleSaveToLocalFolder(true)}
-                  className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1.5 rounded-r-md transition-all flex items-center justify-center font-bold shadow-sm active:scale-95"
-                  title="Change Folder"
+                  onClick={() => handleSaveToLocalFolder(false)}
+                  className="px-3 py-1.5 text-[11px] font-bold text-[#124e8f] hover:bg-neutral-50 transition-colors flex items-center gap-1.5"
+                  title={rootHandle ? `Save to ${rootHandle.name}` : "Save to local folder"}
                 >
-                  <Settings size={12} />
+                  <Folder size={14} className="text-emerald-500" /> {rootHandle ? 'Save' : 'Save'}
+                </button>
+                {rootHandle && (
+                  <button
+                    onClick={() => handleSaveToLocalFolder(true)}
+                    className="px-2 py-1.5 hover:bg-neutral-50 text-neutral-400 transition-colors border-l border-neutral-100"
+                    title="Change Folder"
+                  >
+                    <Settings size={12} />
+                  </button>
+                )}
+              </div>
+              <div className="w-px h-4 bg-neutral-200"></div>
+              <label className="px-3 py-1.5 text-[11px] font-bold text-[#124e8f] hover:bg-neutral-50 transition-colors flex items-center gap-1.5 cursor-pointer">
+                <Upload size={14} className="text-purple-500" /> Load
+                <input type="file" className="hidden" onChange={handleLoadPricelist} accept=".json" />
+              </label>
+              <div className="w-px h-4 bg-neutral-200"></div>
+              <button
+                onClick={() => setShowResetConfirm(true)}
+                className="px-3 py-1.5 text-[11px] font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-1.5"
+              >
+                <RefreshCcw size={14} /> Reset
+              </button>
+            </div>
+
+            {/* Utility Group */}
+            <div className="flex items-center gap-1 ml-1">
+              <button 
+                onClick={() => setShowGridLines(!showGridLines)}
+                className={`p-2 rounded-lg border transition-all ${showGridLines ? 'bg-[#124e8f] text-white border-[#124e8f] shadow-sm' : 'bg-white text-neutral-400 border-neutral-200 hover:border-neutral-300'}`}
+                title="Toggle alignment grid lines"
+              >
+                <Grid size={14} />
+              </button>
+              <button 
+                onClick={() => setShowLaunchGuide(true)}
+                className="p-2 rounded-lg border border-neutral-200 bg-white text-neutral-400 hover:text-[#124e8f] hover:border-[#124e8f]/30 transition-all"
+                title="Launch Guide"
+              >
+                <Rocket size={14} />
+              </button>
+              {isInstallable && (
+                <button 
+                  onClick={handleInstallClick}
+                  className="p-2 rounded-lg border border-green-200 bg-green-50 text-green-600 hover:bg-green-100 transition-all"
+                  title="Install App"
+                >
+                  <Download size={14} />
                 </button>
               )}
             </div>
-            <label
-              className="text-xs bg-neutral-100 hover:bg-neutral-200 text-neutral-700 px-4 py-1.5 rounded-md transition-all flex items-center gap-1.5 font-bold shadow-sm active:scale-95 cursor-pointer"
-              title="Load pricelist from JSON file"
-            >
-              <Upload size={14} /> Load
-              <input type="file" className="hidden" onChange={handleLoadPricelist} accept=".json" />
-            </label>
-            <button
-              onClick={() => setShowResetConfirm(true)}
-              className="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-4 py-1.5 rounded-md transition-all flex items-center gap-1.5 font-bold shadow-sm active:scale-95"
-              title="Wipe out and start new pricelist"
-            >
-              <RefreshCcw size={14} /> Reset
-            </button>
           </div>
         </div>
+      </div>
 
         {activeContext && (
           <div className="px-6 py-2 border-t border-neutral-100 bg-[#f8fafc] flex items-center justify-center animate-in slide-in-from-top-2 duration-300">
@@ -1478,7 +1480,6 @@ export default function App() {
             />
           </div>
         )}
-      </div>
 
       {/* Delete Confirmation Modal */}
       {showResetConfirm && (
