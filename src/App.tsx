@@ -790,9 +790,9 @@ export default function App() {
     }));
   };
 
-  const getGridTemplate = (isHeader: boolean = false) => {
+  const getGridTemplate = (isHeader: boolean = false, exporting: boolean = isExporting) => {
     const widths = [];
-    if (!isExporting) {
+    if (!exporting) {
       widths.push('32px'); // Actions/Handle column
       widths.push(`${columnWidths.select}px`);
     }
@@ -1047,7 +1047,8 @@ export default function App() {
     const tableHeaderHeight = 34;
     
     // Available for rows on other pages = 1074 - 34 - 60 - 1 (border-b) = 979
-    const OTHER_PAGE_MAX = 1074 - tableHeaderHeight - footerHeight - 1;
+    // Reduced by 10px to ensure no clipping on various rendering engines
+    const OTHER_PAGE_MAX = 1074 - tableHeaderHeight - footerHeight - 11;
     
     // First page header:
     // Logo section = 140px + 32px (mb-8) = 172px
@@ -1753,8 +1754,8 @@ export default function App() {
 
           {/* Table Header */}
           <div 
-            className="hidden sm:grid bg-[#124e8f] text-[#ffffff] text-[11px] font-bold uppercase tracking-wider border-x border-t border-[#124e8f] h-[34px] sticky top-[65px] z-20 shadow-sm print:shadow-none print:relative print:top-auto"
-            style={{ gridTemplateColumns: getGridTemplate(true) }}
+            className={`${isExporting ? 'grid' : 'hidden sm:grid'} bg-[#124e8f] text-[#ffffff] text-[11px] font-bold uppercase tracking-wider border-x border-t border-[#124e8f] h-[34px] ${isExporting ? 'relative' : 'sticky top-[65px]'} z-20 shadow-sm print:shadow-none print:relative print:top-auto`}
+            style={{ gridTemplateColumns: getGridTemplate(true, isExporting) }}
             onClick={(e) => { e.stopPropagation(); setSelectedColumn(null); }}
           >
             {!isExporting && (
@@ -1854,7 +1855,7 @@ export default function App() {
           </div>
 
           {/* Table Body */}
-          <div className="flex-1 border-x border-b border-[#e2e8f0] flex flex-col min-h-0 overflow-hidden">
+          <div className={`flex-1 border-x border-b border-[#e2e8f0] flex flex-col min-h-0 ${isExporting ? 'overflow-visible' : 'overflow-hidden'}`}>
             {pageItems.map((item) => {
               const index = item.originalIndex;
               return (
@@ -1896,9 +1897,9 @@ export default function App() {
                   </div>
                 ) : (
                   <div 
-                    className="grid grid-cols-1 text-[10.5px] border-b border-[#e2e8f0] hover:bg-[#124e8f]/5 transition-colors group/item relative"
+                    className={`${isExporting ? 'grid' : 'grid grid-cols-1 sm:grid'} text-[10.5px] border-b border-[#e2e8f0] hover:bg-[#124e8f]/5 transition-colors group/item relative`}
                     style={{ 
-                      gridTemplateColumns: getGridTemplate(),
+                      gridTemplateColumns: getGridTemplate(false, isExporting),
                       height: rowHeights[item.id] ? `${rowHeights[item.id]}px` : (viewMode === 'with-images' ? '72px' : '36px')
                     }}
                   >
@@ -1943,8 +1944,8 @@ export default function App() {
                         </div>
                       );
                       if (col === 'sku') return (
-                        <div key="sku" className="text-[#64748b] font-medium flex justify-between sm:flex sm:items-start sm:border-r border-[#e2e8f0] relative group/field" onClick={(e) => { e.stopPropagation(); setActiveStyleField({ id: item.id, field: 'sku' }); const input = e.currentTarget.querySelector('input, textarea') as HTMLElement; if (input) input.focus(); }}>
-                          <span className="sm:hidden font-bold uppercase text-[8px] text-[#94a3b8] px-4 pt-1">SKU</span>
+                        <div key="sku" className={`text-[#64748b] font-medium flex justify-between ${isExporting ? 'items-start border-r' : 'sm:flex sm:items-start sm:border-r'} border-[#e2e8f0] relative group/field`} onClick={(e) => { e.stopPropagation(); setActiveStyleField({ id: item.id, field: 'sku' }); const input = e.currentTarget.querySelector('input, textarea') as HTMLElement; if (input) input.focus(); }}>
+                          {!isExporting && <span className="sm:hidden font-bold uppercase text-[8px] text-[#94a3b8] px-4 pt-1">SKU</span>}
                           <div className="w-full h-full px-4 py-1 pt-2">
                             <AutoFitText 
                               text={item.sku} 
@@ -1959,9 +1960,9 @@ export default function App() {
                         </div>
                       );
                       if (col === 'description') return (
-                        <div key="description" className="text-[#0f172a] font-bold uppercase pr-4 sm:pl-0 sm:border-r border-[#e2e8f0] relative group/field" onClick={(e) => { e.stopPropagation(); setActiveStyleField({ id: item.id, field: 'description' }); const input = e.currentTarget.querySelector('input, textarea') as HTMLElement; if (input) input.focus(); }}>
-                          <span className="sm:hidden block font-bold uppercase text-[8px] text-[#94a3b8] mb-0.5 px-4 pt-1">Description</span>
-                          <div className="w-full h-full px-4 sm:px-2 py-1 flex items-start pt-2">
+                        <div key="description" className={`text-[#0f172a] font-bold uppercase pr-4 ${isExporting ? 'pl-0 border-r' : 'sm:pl-0 sm:border-r'} border-[#e2e8f0] relative group/field`} onClick={(e) => { e.stopPropagation(); setActiveStyleField({ id: item.id, field: 'description' }); const input = e.currentTarget.querySelector('input, textarea') as HTMLElement; if (input) input.focus(); }}>
+                          {!isExporting && <span className="sm:hidden block font-bold uppercase text-[8px] text-[#94a3b8] mb-0.5 px-4 pt-1">Description</span>}
+                          <div className={`w-full h-full ${isExporting ? 'px-2' : 'px-4 sm:px-2'} py-1 flex items-start pt-2`}>
                             <div className="w-full h-full relative">
                               <div 
                                 className="break-words whitespace-pre-wrap w-full uppercase"
@@ -2000,10 +2001,10 @@ export default function App() {
                         </div>
                       );
                       if (col === 'normal') return (
-                        <div key="normal" className={`text-left sm:text-right text-[#334155] flex justify-between sm:block ${viewMode !== 'without-image-promo' ? 'sm:border-r border-[#e2e8f0]' : ''} relative group/field`} onClick={(e) => { e.stopPropagation(); setActiveStyleField({ id: item.id, field: 'normalPrice' }); const input = e.currentTarget.querySelector('input, textarea') as HTMLElement; if (input) input.focus(); }}>
-                          <span className="sm:hidden font-bold uppercase text-[8px] text-[#94a3b8] px-4 pt-1">Normal</span>
+                        <div key="normal" className={`text-left ${isExporting ? 'text-right block' : 'sm:text-right flex justify-between sm:block'} ${viewMode !== 'without-image-promo' ? (isExporting ? 'border-r' : 'sm:border-r') : ''} border-[#e2e8f0] relative group/field`} onClick={(e) => { e.stopPropagation(); setActiveStyleField({ id: item.id, field: 'normalPrice' }); const input = e.currentTarget.querySelector('input, textarea') as HTMLElement; if (input) input.focus(); }}>
+                          {!isExporting && <span className="sm:hidden font-bold uppercase text-[8px] text-[#94a3b8] px-4 pt-1">Normal</span>}
                           <div className="flex items-start justify-end h-full px-1 pt-2">
-                            <span className="pl-4 sm:pl-0 text-[9px] opacity-70 mr-1 mt-0.5">R</span>
+                            <span className={`${isExporting ? 'pl-0' : 'pl-4 sm:pl-0'} text-[9px] opacity-70 mr-1 mt-0.5`}>R</span>
                             <div className="flex-1 h-full">
                               <AutoFitText 
                                 text={item.normalPrice} 
@@ -2018,10 +2019,10 @@ export default function App() {
                         </div>
                       );
                       if (col === 'promo' && viewMode !== 'without-image-promo') return (
-                        <div key="promo" className="text-left sm:text-right text-[#0f172a] font-black flex justify-between sm:block relative group/field" onClick={(e) => { e.stopPropagation(); setActiveStyleField({ id: item.id, field: 'promoPrice' }); const input = e.currentTarget.querySelector('input, textarea') as HTMLElement; if (input) input.focus(); }}>
-                          <span className="sm:hidden font-bold uppercase text-[8px] text-[#94a3b8] px-4 pt-1">Promo</span>
+                        <div key="promo" className={`text-left ${isExporting ? 'text-right block' : 'sm:text-right flex justify-between sm:block'} relative group/field`} onClick={(e) => { e.stopPropagation(); setActiveStyleField({ id: item.id, field: 'promoPrice' }); const input = e.currentTarget.querySelector('input, textarea') as HTMLElement; if (input) input.focus(); }}>
+                          {!isExporting && <span className="sm:hidden font-bold uppercase text-[8px] text-[#94a3b8] px-4 pt-1">Promo</span>}
                           <div className="flex items-start justify-end h-full px-1 pt-2">
-                            <span className="pl-4 sm:pl-0 text-[9px] opacity-70 mr-1 mt-0.5">R</span>
+                            <span className={`${isExporting ? 'pl-0' : 'pl-4 sm:pl-0'} text-[9px] opacity-70 mr-1 mt-0.5`}>R</span>
                             <div className="flex-1 h-full">
                               <AutoFitText 
                                 text={item.promoPrice} 
