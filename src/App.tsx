@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Plus, Trash2, Download, Upload, MoveUp, MoveDown, FileText, Image as ImageIcon, X, Rocket, CheckSquare, Square, Check, Grid, AlignLeft, AlignCenter, AlignRight, ChevronUp, ChevronDown, GripVertical, Settings, Folder } from 'lucide-react';
+import { Plus, Trash2, Download, Upload, MoveUp, MoveDown, FileText, Image as ImageIcon, X, Rocket, CheckSquare, Square, Check, Grid, AlignLeft, AlignCenter, AlignRight, ChevronUp, ChevronDown, GripVertical, Settings, Folder, RefreshCcw } from 'lucide-react';
 import { get, set } from 'idb-keyval';
 import jsPDF from 'jspdf';
 import { toPng } from 'html-to-image';
@@ -743,6 +743,7 @@ export default function App() {
     },
   ]);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [viewMode, setViewMode] = useState<'with-images' | 'without-images' | 'without-image-promo'>('with-images');
   const [showLaunchGuide, setShowLaunchGuide] = useState(false);
@@ -1247,6 +1248,27 @@ export default function App() {
     reader.readAsText(file);
   };
 
+  const handleReset = () => {
+    setItems([]);
+    setHeaderImage(null);
+    setSelectedIds(new Set());
+    setSelectedColumn(null);
+    setActiveStyleField(null);
+    setShowResetConfirm(false);
+    
+    // Reset text fields to defaults
+    setHeader('PRICE LIST');
+    setBrand('FALCO');
+    
+    const now = new Date();
+    const months = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
+    const currentMonthYear = `${months[now.getMonth()]} ${now.getFullYear()}`;
+    
+    setDate(currentMonthYear);
+    setSubHeader(`FALCO PRICELIST ${currentMonthYear}`);
+    setFooterText('Modern Living - Quality Extractors & Appliances');
+  };
+
   const getActiveStyleContext = () => {
     if (!activeStyleField) return null;
     
@@ -1435,6 +1457,13 @@ export default function App() {
               <Upload size={14} /> Load
               <input type="file" className="hidden" onChange={handleLoadPricelist} accept=".json" />
             </label>
+            <button
+              onClick={() => setShowResetConfirm(true)}
+              className="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-4 py-1.5 rounded-md transition-all flex items-center gap-1.5 font-bold shadow-sm active:scale-95"
+              title="Wipe out and start new pricelist"
+            >
+              <RefreshCcw size={14} /> Reset
+            </button>
           </div>
         </div>
 
@@ -1452,6 +1481,34 @@ export default function App() {
       </div>
 
       {/* Delete Confirmation Modal */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in duration-200">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600 mb-4">
+              <RefreshCcw size={24} />
+            </div>
+            <h3 className="text-lg font-bold text-neutral-900 mb-2">Reset Pricelist?</h3>
+            <p className="text-neutral-500 text-sm mb-6">
+              This will wipe out all items and categories. This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowResetConfirm(false)}
+                className="flex-1 px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg font-bold transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleReset}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold transition-colors"
+              >
+                Reset All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {deleteConfirmId && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
