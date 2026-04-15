@@ -7,7 +7,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Plus, Trash2, Download, Upload, MoveUp, MoveDown, FileText, Image as ImageIcon, X, Rocket, CheckSquare, Square, Check, Grid, AlignLeft, AlignCenter, AlignRight, ChevronUp, ChevronDown, GripVertical, Settings, Folder, RefreshCcw } from 'lucide-react';
 import { get, set } from 'idb-keyval';
 import jsPDF from 'jspdf';
-import { toPng } from 'html-to-image';
+import { toJpeg } from 'html-to-image';
 import JSZip from 'jszip';
 
 import { motion, AnimatePresence } from 'motion/react';
@@ -1086,16 +1086,22 @@ export default function App() {
     // Give state time to update and hide UI elements
     setTimeout(async () => {
       try {
-        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const pdf = new jsPDF({ 
+          orientation: 'portrait', 
+          unit: 'mm', 
+          format: 'a4',
+          compress: true 
+        });
         const zip = new JSZip();
         
         for (let i = 0; i < pages.length; i++) {
           const pageEl = document.getElementById(`page-${i}`);
           if (!pageEl) continue;
           
-          const dataUrl = await toPng(pageEl, {
-            quality: 1.0,
-            pixelRatio: 2,
+          // Use toJpeg with standard resolution for much smaller file sizes
+          const dataUrl = await toJpeg(pageEl, {
+            quality: 0.7,
+            pixelRatio: 1.0,
             backgroundColor: '#ffffff',
             style: { transform: 'scale(1)', transformOrigin: 'top left' }
           });
@@ -1105,7 +1111,7 @@ export default function App() {
             const imgProps = pdf.getImageProperties(dataUrl);
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-            pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.addImage(dataUrl, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'MEDIUM');
           } else {
             if (pages.length === 1) {
               downloadFile(dataUrl, 'pricelist.jpg');
@@ -1119,6 +1125,8 @@ export default function App() {
         }
         
         if (format === 'pdf') {
+          const pdfBlob = pdf.output('blob');
+          console.log(`Generated PDF size: ${(pdfBlob.size / (1024 * 1024)).toFixed(2)} MB`);
           pdf.save('pricelist.pdf');
         } else if (format === 'jpg' && pages.length > 1) {
           const content = await zip.generateAsync({ type: 'blob' });
@@ -1176,18 +1184,29 @@ export default function App() {
       const monthHandle = await yearHandle.getDirectoryHandle(month, { create: true });
       
       // Generate PDF
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pdf = new jsPDF({ 
+        orientation: 'portrait', 
+        unit: 'mm', 
+        format: 'a4',
+        compress: true 
+      });
       for (let i = 0; i < pages.length; i++) {
         const pageEl = document.getElementById(`page-${i}`);
         if (!pageEl) continue;
-        const dataUrl = await toPng(pageEl, { quality: 1.0, pixelRatio: 2, backgroundColor: '#ffffff' });
+        // Use toJpeg with standard resolution for much smaller file sizes
+        const dataUrl = await toJpeg(pageEl, { 
+          quality: 0.7, 
+          pixelRatio: 1.0, 
+          backgroundColor: '#ffffff' 
+        });
         if (i > 0) pdf.addPage();
         const imgProps = pdf.getImageProperties(dataUrl);
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-        pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.addImage(dataUrl, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'MEDIUM');
       }
       const pdfBlob = pdf.output('blob');
+      console.log(`Generated PDF size (Local Save): ${(pdfBlob.size / (1024 * 1024)).toFixed(2)} MB`);
       const pdfFileHandle = await monthHandle.getFileHandle(`${brand}_${month}_${year}.pdf`, { create: true });
       const pdfWritable = await pdfFileHandle.createWritable();
       await pdfWritable.write(pdfBlob);
